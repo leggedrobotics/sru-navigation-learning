@@ -124,6 +124,9 @@ sru-navigation-learning/
 ```bash
 git clone https://github.com/leggedrobotics/sru-navigation-learning.git
 cd sru-navigation-learning
+
+python3 -m venv sru_nav_learning
+source sru_nav_learning/bin/activate
 pip install -e .
 ```
 
