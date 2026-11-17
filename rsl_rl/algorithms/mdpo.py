@@ -17,6 +17,7 @@ import torch
 import torch.nn as nn
 
 from rsl_rl.storage import RolloutStorage
+from rsl_rl.utils.bootstrap import evaluate_bootstrap_value
 
 if TYPE_CHECKING:
     from rsl_rl.modules import ActorCritic
@@ -326,8 +327,8 @@ class MDPO:
         last_critic_obs_1 = last_critic_obs[self.indices_1]
         last_critic_obs_2 = last_critic_obs[self.indices_2]
 
-        last_values_1 = self.actor_critic_1.evaluate(last_critic_obs_1).detach()
-        last_values_2 = self.actor_critic_2.evaluate(last_critic_obs_2).detach()
+        last_values_1 = evaluate_bootstrap_value(self.actor_critic_1, last_critic_obs_1)
+        last_values_2 = evaluate_bootstrap_value(self.actor_critic_2, last_critic_obs_2)
 
         self.storage_1.compute_returns(last_values_1, self.gamma, self.lam)
         self.storage_2.compute_returns(last_values_2, self.gamma, self.lam)
