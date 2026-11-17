@@ -6,25 +6,44 @@ import pytest
 import torch
 
 from rsl_rl.algorithms import MDPO, PPO, SPO
-from rsl_rl.modules import ActorCriticSRU
+from rsl_rl.modules import ActorCritic, ActorCriticRecurrent, ActorCriticSRU
 
 
-@pytest.mark.parametrize("algorithm_class", [PPO, SPO, MDPO])
+@pytest.mark.parametrize(
+    ("algorithm_class", "policy_kind"),
+    [
+        (PPO, "sru"),
+        (SPO, "sru"),
+        (MDPO, "sru"),
+        (PPO, "gru"),
+        (PPO, "lstm"),
+        (PPO, "lstm_sru"),
+        (PPO, "mlp"),
+    ],
+)
 @torch.no_grad()
-def test_bootstrap_preserves_critic_history_between_rollouts(algorithm_class):
+def test_bootstrap_preserves_critic_history_between_rollouts(algorithm_class, policy_kind):
     torch.manual_seed(7)
     num_envs, num_actor_obs, num_critic_obs = 4, 19, 36
-    policy = ActorCriticSRU(
-        num_actor_obs,
-        num_critic_obs,
+    policy_kwargs = dict(
+        num_actor_obs=num_actor_obs,
+        num_critic_obs=num_critic_obs,
         num_actions=2,
         actor_hidden_dims=[8],
         critic_hidden_dims=[8],
-        image_input_dims=(4, 2, 2),
-        height_input_dims=(4, 2, 2),
-        rnn_hidden_size=8,
-        dropout=0.0,
     )
+    if policy_kind == "mlp":
+        policy = ActorCritic(**policy_kwargs)
+    elif policy_kind == "sru":
+        policy = ActorCriticSRU(
+            **policy_kwargs,
+            image_input_dims=(4, 2, 2),
+            height_input_dims=(4, 2, 2),
+            rnn_hidden_size=8,
+            dropout=0.2,
+        )
+    else:
+        policy = ActorCriticRecurrent(**policy_kwargs, rnn_type=policy_kind, rnn_hidden_size=8, dropout=0.2)
     if algorithm_class is MDPO:
         second_policy = copy.deepcopy(policy)
         algorithm = MDPO(policy, second_policy, use_muon=False)
