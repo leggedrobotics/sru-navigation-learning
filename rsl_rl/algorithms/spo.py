@@ -11,6 +11,7 @@ import torch.nn.functional as F
 
 from rsl_rl.modules import ActorCritic
 from rsl_rl.storage import RolloutStorage
+from rsl_rl.utils.bootstrap import evaluate_bootstrap_value
 
 
 class SPO:
@@ -100,7 +101,7 @@ class SPO:
         self.actor_critic.reset(dones)
 
     def compute_returns(self, last_critic_obs):
-        last_values = self.actor_critic.evaluate(last_critic_obs).detach()
+        last_values = evaluate_bootstrap_value(self.actor_critic, last_critic_obs)
         self.storage.compute_returns(last_values, self.gamma, self.lam)
 
     def update(self, iter, max_iters):
